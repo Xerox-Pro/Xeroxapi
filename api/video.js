@@ -4,29 +4,45 @@ let youtube;
 
 export default async function handler(req, res) {
   try {
-    // YouTubeクライアント初期化
-    if (!youtube) youtube = await Innertube.create({ generate_session_locally: true });
+    if (!youtube) youtube = await Innertube.create();
 
     const id = req.query.id;
     if (!id) return res.status(400).json({ error: "Missing video id" });
 
-    // 動画情報取得
+    const limit = 100;
+
     const info = await youtube.getInfo(id);
     const details = info.basic_info;
 
-    res.json({
-      title: details?.title ?? null,                              // タイトル
-      description: details?.short_description ?? null,           // 概要欄
-      upload_date: details?.publish_date ?? null,                // 投稿日
-      views: details?.view_count ?? 0,                            // 再生数
-      channel: {
-        id: details?.channel_id ?? null,                          // チャンネルID
-        name: details?.author?.name ?? details?.author ?? null,  // チャンネル名
-        thumbnails: details?.author?.thumbnails?.map(t => t.url) ?? [], // チャンネルアイコン
-        subscribers: details?.author?.subscriber_count ?? 0       // 登録者数
-      }
-    });
+    let related = info.related_videos ? Array.from(info.related_videos) : [];
 
+    while (related.length < limit && info.has_continuation) {
+      const next = await info.getContinuation();
+      related = related.concat(next.related_videos || []);
+    }
+
+    res.json({
+      id: details.id,
+      title: details.title,
+      description: details.short_description,
+      full_description: details.description,
+      views: details.view_count,
+      likes: details.like_count,
+      channel: {
+        id: details.channel_id,
+        name: details.author,
+      },
+      upload_date: details.publish_date,
+      keywords: details.keywords || [],
+      duration: details.duration,
+      related_videos: related.slice(0, limit).map(v => ({
+        id: v.id,
+        title: v.title,
+        duration: v.duration?.text,
+        channel: v.author?.name,
+        views: v.view_count
+      }))
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
