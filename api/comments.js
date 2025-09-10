@@ -9,13 +9,9 @@ export default async function handler(req, res) {
     const id = req.query.id;
     if (!id) return res.status(400).json({ error: "Missing video id" });
 
-    const limit = 1000;
+    const limit = 100;
 
-    // クエリで sort 指定
-    // デフォルトは人気順 ("TOP_COMMENTS")
-    const sort = req.query.sort === "new" ? "NEWEST_FIRST" : "TOP_COMMENTS";
-
-    const comments = await youtube.getComments(id, { sort });
+    const comments = await youtube.getComments(id);
     let allComments = comments.contents ? Array.from(comments.contents) : [];
 
     while (allComments.length < limit && comments.has_continuation) {
