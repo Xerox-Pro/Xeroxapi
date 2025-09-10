@@ -19,13 +19,24 @@ export default async function handler(req, res) {
       allComments = allComments.concat(next.contents || []);
     }
 
-    res.json({
-      comments: allComments.slice(0, limit).map(c => ({
-        user: c.comments[].comment.author.name
-        text: c.comments[].comment.content.text
-        likes: c.comments[].comment.like_count
-      }))
-    });
+res.json({
+  comments: allComments.map(c => ({
+    text: c.comment.content.text,                // コメント内容
+    comment_id: c.comment.comment_id,           // コメントID
+    published_time: c.comment.published_time,   // 経過日数
+    author: {
+      id: c.comment.author.id,                  // アカウントID
+      name: c.comment.author.name,              // アカウント名
+      thumbnails: c.comment.author.thumbnails,  // アカウント画像
+      is_member: c.comment.is_member,           // メンバーかどうか
+      member_badge: c.comment.member_badge?.url // バッジアイコン（メンバーの場合）
+    },
+    like_count: c.comment.like_count,           // 高評価数
+    reply_count: c.comment.reply_count,         // 返信数
+    is_pinned: c.comment.is_pinned              // ピン留めされているか
+  }))
+});
+
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
