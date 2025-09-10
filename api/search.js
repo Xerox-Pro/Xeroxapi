@@ -1,30 +1,23 @@
-import { Innertube } from "youtubei.js";
+import { Client } from "youtubei.js";
+const youtube = new Client();
 
-let youtube;
+export default async function searchHandler(req, res) {
+  const { q, filter } = req.query;
+  if (!q) return res.status(400).json({ error: "検索クエリを指定してください" });
 
-export default async function handler(req, res) {
   try {
-    if (!youtube) youtube = await Innertube.create();
+    const results = await youtube.search(q, { type: filter || "video" });
 
-    const query = req.query.q;
-    const limit = parseInt(req.query.limit) || 50; // デフォルト20件
-
-    const search = await youtube.search(query, { type: "video" });
-    let results = search.videos;
-
-    while (results.length < limit && search.has_continuation) {
-      const next = await search.getContinuation();
-      results = results.concat(next.videos);
-    }
-
-    res.json({
-      results: results.slice(0, limit).map(v => ({
-        id: v.id,
-        title: v.title.text,
-        duration: v.duration?.text,
-        channel: v.author?.name,
+    res.status(200).json(
+      results.items.slice(0, 100).map(r => ({
+        id: r.id,
+        title: r.title,
+        views: r.views,
+        thumbnails: r.thumbnails,
+        type: r.type,
+        channel: r.channel ? { id: r.channel.id, name: r.channel.name } : null
       }))
-    });
+    );
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
