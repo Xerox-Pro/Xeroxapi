@@ -1,0 +1,246 @@
+了解！👌
+じゃあ改めて ルーティング方式（index.js でまとめる）＋ 各 API モジュール をフルセットで再生成するよ。
+これをそのまま Vercel に置けば動く形になってる。
+
+
+---
+
+📂 ディレクトリ構成
+
+my-youtubei-api/
+├─ package.json
+├─ vercel.json
+└─ api/
+   ├─ index.js
+   ├─ video.js
+   ├─ search.js
+   ├─ comments.js
+   └─ channel.js
+
+
+---
+
+package.json
+
+{
+  "name": "youtubei-api",
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "dependencies": {
+    "youtubei.js": "^9.0.0"
+  }
+}
+
+
+---
+
+vercel.json
+
+{
+  "version": 2,
+  "builds": [
+    { "src": "api/index.js", "use": "@vercel/node" }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/index.js" }
+  ]
+}
+
+
+---
+
+api/index.js（ルーティング）
+
+import videoHandler from "./video.js";
+import searchHandler from "./search.js";
+import commentsHandler from "./comments.js";
+import channelHandler from "./channel.js";
+
+export default async function handler(req, res) {
+  const { pathname, searchParams } = new URL(req.url, `http://${req.headers.host}`);
+
+  // クエリを Express っぽく扱えるようにする
+  req.query = Object.fromEntries(searchParams.entries());
+
+  if (pathname.startsWith("/api/video")) {
+    return videoHandler(req, res);
+  } else if (pathname.startsWith("/api/search")) {
+    return searchHandler(req, res);
+  } else if (pathname.startsWith("/api/comments")) {
+    return commentsHandler(req, res);
+  } else if (pathname.startsWith("/api/channel")) {
+    return channelHandler(req, res);
+  } else {
+    res.status(404).json({ error: "Not Found" });
+  }
+}
+
+
+---
+
+api/video.js（動画情報 + 関連動画）
+
+import { Client } from "youtubei.js";
+const youtube = new Client();
+
+export default async function videoHandler(req, res) {
+  const { id } = req.query;
+  if (!id) return res.status(400).json({ error: "動画IDを指定してください" });
+
+  try {
+    const video = await youtube.getVideo(id);
+    const related = await video.getRelated();
+
+    res.status(200).json({
+      id: video.id,
+      title: video.title,
+      description: video.description,
+      views: video.views,
+      likes: video.likes,
+      channel: {
+        id: video.channel.id,
+        name: video.channel.name
+      },
+      published: video.uploadDate,
+      thumbnails: video.thumbnails,
+      related: related.slice(0, 100).map(v => ({
+        id: v.id,
+        title: v.title,
+        views: v.views,
+        thumbnails: v.thumbnails
+      }))
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+
+---
+
+api/search.js（検索結果）
+
+import { Client } from "youtubei.js";
+const youtube = new Client();
+
+export default async function searchHandler(req, res) {
+  const { q, filter } = req.query;
+  if (!q) return res.status(400).json({ error: "検索クエリを指定してください" });
+
+  try {
+    const results = await youtube.search(q, { type: filter || "video" });
+
+    res.status(200).json(
+      results.items.slice(0, 100).map(r => ({
+        id: r.id,
+        title: r.title,
+        views: r.views,
+        thumbnails: r.thumbnails,
+        type: r.type,
+        channel: r.channel ? { id: r.channel.id, name: r.channel.name } : null
+      }))
+    );
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+
+---
+
+api/comments.js（コメント）
+
+import { Client } from "youtubei.js";
+const youtube = new Client();
+
+export default async function commentsHandler(req, res) {
+  const { id } = req.query;
+  if (!id) return res.status(400).json({ error: "動画IDを指定してください" });
+
+  try {
+    const video = await youtube.getVideo(id);
+    const comments = await video.getComments();
+
+    res.status(200).json(
+      comments.items.slice(0, 100).map(c => ({
+        id: c.id,
+        text: c.content,
+        author: c.author?.name,
+        likes: c.likeCount,
+        published: c.published
+      }))
+    );
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+
+---
+
+api/channel.js（チャンネル情報 + 最新動画100件）
+
+import { Client } from "youtubei.js";
+const youtube = new Client();
+
+export default async function channelHandler(req, res) {
+  const { id } = req.query;
+  if (!id) return res.status(400).json({ error: "チャンネルIDを指定してください" });
+
+  try {
+    const channel = await youtube.getChannel(id);
+
+    let videos = [];
+    if (channel.videos) {
+      videos = channel.videos.items.slice(0, 100).map(v => ({
+        id: v.id,
+        title: v.title,
+        views: v.views,
+        thumbnails: v.thumbnails
+      }));
+    }
+
+    res.status(200).json({
+      id: channel.id,
+      name: channel.name,
+      description: channel.description,
+      subscribers: channel.subscriberCount,
+      thumbnails: channel.thumbnails,
+      videos
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+
+---
+
+🔗 API エンドポイント例
+
+動画情報 + 関連動画
+
+/api/video?id=dQw4w9WgXcQ
+
+検索（100件まで）
+
+/api/search?q=初音ミク&filter=video
+
+コメント（100件まで）
+
+/api/comments?id=dQw4w9WgXcQ
+
+チャンネル情報 + 最新動画100件
+
+/api/channel?id=UCdMGYXL38w6htx6Yf9YJa-w
+
+
+
+---
+
+👉 これで index.js がエントリーポイントになって、ルーティング方式で動くよ。
+次に欲しいのは「人気順・古い順」「ショート・プレイリスト」も入れるバージョンにする？
+
