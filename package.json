@@ -1,11 +1,22 @@
 {
   "name": "youtubei-api",
   "version": "1.0.0",
-  "type": "module",
-  "engines": {
-    "node": "22.x"
+  "description": "API for fetching YouTube data using youtubei.js",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
   },
+  "keywords": [
+    "youtube",
+    "api",
+    "youtubei",
+    "nodejs",
+    "express"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
   "dependencies": {
-    "youtubei.js": "^9.0.0"
+    "express": "^4.19.2",
+    "youtubei.js": "^7.2.0"
   }
 }
