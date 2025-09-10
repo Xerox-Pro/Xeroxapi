@@ -11,31 +11,37 @@ export default async function handler(req, res) {
 
     const limit = 100;
 
-    const comments = await youtube.getComments(id);
+    let comments = await youtube.getComments(id);
     let allComments = comments.contents ? Array.from(comments.contents) : [];
 
-    while (allComments.length < limit && comments.has_continuation) {
+    // continuation があるか安全に確認
+    while (
+      allComments.length < limit &&
+      typeof comments.getContinuation === "function" &&
+      comments.has_continuation
+    ) {
       const next = await comments.getContinuation();
       allComments = allComments.concat(next.contents || []);
+      comments = next; // ← 次のページを更新
     }
 
-res.json({
-  comments: allComments.map(c => ({
-    text: c.comment.content.text,                // コメント内容
-    comment_id: c.comment.comment_id,           // コメントID
-    published_time: c.comment.published_time,   // 経過日数
-    author: {
-      id: c.comment.author.id,                  // アカウントID
-      name: c.comment.author.name,              // アカウント名
-      thumbnails: c.comment.author.thumbnails,  // アカウント画像
-      is_member: c.comment.is_member,           // メンバーかどうか
-      member_badge: c.comment.member_badge?.url // バッジアイコン（メンバーの場合）
-    },
-    like_count: c.comment.like_count,           // 高評価数
-    reply_count: c.comment.reply_count,         // 返信数
-    is_pinned: c.comment.is_pinned              // ピン留めされているか
-  }))
-});
+    res.json({
+      comments: allComments.slice(0, limit).map(c => ({
+        text: c.comment?.content?.text ?? c.comment?.content ?? null,
+        comment_id: c.comment?.comment_id ?? null,
+        published_time: c.comment?.published_time ?? null,
+        author: {
+          id: c.comment?.author?.id ?? null,
+          name: c.comment?.author?.name ?? null,
+          thumbnails: c.comment?.author?.thumbnails?.map(t => t.url) ?? [],
+          is_member: c.comment?.author?.is_member ?? false,
+          member_badge: c.comment?.member_badge?.url ?? null
+        },
+        like_count: c.comment?.like_count ?? 0,
+        reply_count: c.comment?.reply_count ?? 0,
+        is_pinned: c.comment?.is_pinned ?? false
+      }))
+    });
 
   } catch (err) {
     res.status(500).json({ error: err.message });
