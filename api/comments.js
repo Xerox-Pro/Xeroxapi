@@ -10,23 +10,27 @@ export default async function handler(req, res) {
     if (!id) return res.status(400).json({ error: "Missing video id" });
 
     const limit = 100;
-
-    const comments = await youtube.getComments(id);
-    let allComments = comments.contents ? Array.from(comments.contents) : [];
+    let comments = await youtube.getComments(id);
+    let allComments = comments.comments || [];
 
     while (allComments.length < limit && comments.has_continuation) {
-      const next = await comments.getContinuation();
-      allComments = allComments.concat(next.contents || []);
+      comments = await comments.getContinuation();
+      allComments = allComments.concat(comments.comments || []);
     }
 
-    res.json({
-      comments: allComments.slice(0, limit).map(c => ({
-        author: c.author?.name,
-        text: c.content?.text,
-        likes: c.vote_count
-      }))
+    // コメントの構造が c.comment または c にあるケースを両方対応
+    const mapped = allComments.slice(0, limit).map(c => {
+      const data = c.comment || c;
+      return {
+        author: data.author?.name || "Unknown",
+        text: data.content?.text || "",
+        likes: data.vote_count ?? 0
+      };
     });
+
+    res.json({ comments: mapped });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: err.message });
   }
 }
