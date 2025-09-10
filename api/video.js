@@ -26,7 +26,7 @@ export default async function handler(req, res) {
       currentInfo = next; // ← continuation更新
     }
 
-    // JSON整形して返す
+      // JSON整形して返す
     res.json({
       id: details.id,
       title: details.title,
