@@ -1,50 +1,31 @@
-import { Innertube } from "youtubei.js";
+import { Client } from "youtubei.js";
+const youtube = new Client();
 
-let youtube;
+export default async function channelHandler(req, res) {
+  const { id } = req.query;
+  if (!id) return res.status(400).json({ error: "チャンネルIDを指定してください" });
 
-export default async function handler(req, res) {
   try {
-    if (!youtube) youtube = await Innertube.create();
-
-    const id = req.query.id;
-    if (!id) return res.status(400).json({ error: "Missing channel id" });
-
-    const limit = 100;
-
     const channel = await youtube.getChannel(id);
 
-    const fetchVideos = async (videos) => {
-      let list = videos || [];
-      while (list.length < limit && videos?.has_continuation) {
-        const next = await videos.getContinuation();
-        list = list.concat(next.contents || []);
-      }
-      return list.slice(0, limit).map(v => ({
+    let videos = [];
+    if (channel.videos) {
+      videos = channel.videos.items.slice(0, 100).map(v => ({
         id: v.id,
         title: v.title,
-        views: v.view_count,
-        thumbnail: v.thumbnails?.[v.thumbnails.length-1]?.url || null
+        views: v.views,
+        thumbnails: v.thumbnails
       }));
-    };
+    }
 
-    const latestVideos = await fetchVideos(channel.videos);
-    const oldestVideos = await fetchVideos(channel.videos?.sort((a,b)=>a.publish_date-b.publish_date));
-    const popularVideos = await fetchVideos(channel.videos?.sort((a,b)=>b.view_count-a.view_count));
-    const shorts = await fetchVideos(channel.shorts);
-    const playlists = await fetchVideos(channel.playlists);
-
-    res.json({
+    res.status(200).json({
       id: channel.id,
       name: channel.name,
       description: channel.description,
-      subscribers: channel.subscriber_count,
-      latest_videos: latestVideos,
-      oldest_videos: oldestVideos,
-      popular_videos: popularVideos,
-      shorts: shorts,
-      playlists: playlists
+      subscribers: channel.subscriberCount,
+      thumbnails: channel.thumbnails,
+      videos
     });
-
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
