@@ -9,46 +9,41 @@ export default async function handler(req, res) {
     const id = req.query.id;
     if (!id) return res.status(400).json({ error: "Missing video id" });
 
-    const limit = 30; // 関連動画最大件数
+    const limit = 100;
 
-    // 動画情報取得
     const info = await youtube.getInfo(id);
     const details = info.basic_info;
 
-    // 概要欄・高評価・再生数・投稿日
-    const videoData = {
+    let related = info.related_videos ? Array.from(info.related_videos) : [];
+
+    while (related.length < limit && info.has_continuation) {
+      const next = await info.getContinuation();
+      related = related.concat(next.related_videos || []);
+    }
+
+    res.json({
       id: details.id,
       title: details.title,
       description: details.short_description,
       full_description: details.description,
       views: details.view_count,
       likes: details.like_count,
+      channel: {
+        id: details.channel_id,
+        name: details.author,
+      },
       upload_date: details.publish_date,
-    };
-
-    // 関連動画取得
-    let related = [];
-    if (info.related_videos) related = Array.from(info.related_videos);
-
-    // continuation で最大 limit 件まで取得
-    let next = info;
-    while (related.length < limit && next.has_continuation) {
-      const continuation = await next.getContinuation();
-      related = related.concat(continuation.related_videos || []);
-      next = continuation;
-    }
-
-    videoData.related_videos = related.slice(0, limit).map(v => ({
-      id: v.id,
-      title: v.title,
-      duration: v.duration?.text,
-      channel: v.author?.name,
-      views: v.view_count
-    }));
-
-    res.json(videoData);
+      keywords: details.keywords || [],
+      duration: details.duration,
+      related_videos: related.slice(0, limit).map(v => ({
+        id: v.id,
+        title: v.title,
+        duration: v.duration?.text,
+        channel: v.author?.name,
+        views: v.view_count
+      }))
+    });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: err.message });
   }
 }
