@@ -1,32 +1,23 @@
-import { Innertube } from "youtubei.js";
+import { Client } from "youtubei.js";
+const youtube = new Client();
 
-let youtube;
+export default async function commentsHandler(req, res) {
+  const { id } = req.query;
+  if (!id) return res.status(400).json({ error: "動画IDを指定してください" });
 
-export default async function handler(req, res) {
   try {
-    if (!youtube) youtube = await Innertube.create();
+    const video = await youtube.getVideo(id);
+    const comments = await video.getComments();
 
-    const id = req.query.id;
-    if (!id) return res.status(400).json({ error: "Missing video id" });
-
-    const limit = 100; // 常に100件
-
-    // コメント取得
-    const comments = await youtube.getComments(id);
-    let allComments = comments.contents;
-
-    while (allComments.length < limit && comments.has_continuation) {
-      const next = await comments.getContinuation();
-      allComments = allComments.concat(next.contents);
-    }
-
-    res.json({
-      comments: allComments.slice(0, limit).map(c => ({
+    res.status(200).json(
+      comments.items.slice(0, 100).map(c => ({
+        id: c.id,
+        text: c.content,
         author: c.author?.name,
-        text: c.content.text,
-        likes: c.vote_count
+        likes: c.likeCount,
+        published: c.published
       }))
-    });
+    );
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
