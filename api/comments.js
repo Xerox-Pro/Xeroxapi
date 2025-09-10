@@ -21,9 +21,9 @@ export default async function handler(req, res) {
 
     res.json({
       comments: allComments.slice(0, limit).map(c => ({
-        author: c.author?.name,
-        text: c.content?.text,
-        likes: c.vote_count
+        user: c.comments[].comment.author.name
+        text: c.comments[].comment.content.text
+        likes: c.comments[].comment.like_count
       }))
     });
   } catch (err) {
