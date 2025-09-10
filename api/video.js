@@ -1,48 +1,31 @@
-import { Innertube } from "youtubei.js";
+import { Client } from "youtubei.js";
+const youtube = new Client();
 
-let youtube;
+export default async function videoHandler(req, res) {
+  const { id } = req.query;
+  if (!id) return res.status(400).json({ error: "動画IDを指定してください" });
 
-export default async function handler(req, res) {
   try {
-    if (!youtube) youtube = await Innertube.create();
+    const video = await youtube.getVideo(id);
+    const related = await video.getRelated();
 
-    const id = req.query.id;
-    if (!id) return res.status(400).json({ error: "Missing video id" });
-
-    const limit = 100; // 常に100件
-
-    // 動画情報を取得
-    const info = await youtube.getInfo(id);
-    const details = info.basic_info;
-
-    // 関連動画を取得
-    let related = info.related_videos || [];
-
-    while (related.length < limit && info.has_continuation) {
-      const next = await info.getContinuation();
-      related = related.concat(next.related_videos || []);
-    }
-
-    res.json({
-      id: details.id,
-      title: details.title,
-      description: details.short_description,
-      full_description: details.description,
-      views: details.view_count,
-      likes: details.like_count,
+    res.status(200).json({
+      id: video.id,
+      title: video.title,
+      description: video.description,
+      views: video.views,
+      likes: video.likes,
       channel: {
-        id: details.channel_id,
-        name: details.author,
+        id: video.channel.id,
+        name: video.channel.name
       },
-      upload_date: details.publish_date,
-      keywords: details.keywords || [],
-      duration: details.duration,
-      related_videos: related.slice(0, limit).map(v => ({
+      published: video.uploadDate,
+      thumbnails: video.thumbnails,
+      related: related.slice(0, 100).map(v => ({
         id: v.id,
         title: v.title,
-        duration: v.duration?.text,
-        channel: v.author?.name,
-        views: v.view_count
+        views: v.views,
+        thumbnails: v.thumbnails
       }))
     });
   } catch (err) {
