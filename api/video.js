@@ -9,14 +9,12 @@ export default async function handler(req, res) {
     const id = req.query.id;
     if (!id) return res.status(400).json({ error: "Missing video id" });
 
-    const limit = 100; // 常に100件
+    const limit = 100;
 
-    // 動画情報を取得
     const info = await youtube.getInfo(id);
     const details = info.basic_info;
 
-    // 関連動画を取得
-    let related = info.related_videos || [];
+    let related = info.related_videos ? Array.from(info.related_videos) : [];
 
     while (related.length < limit && info.has_continuation) {
       const next = await info.getContinuation();

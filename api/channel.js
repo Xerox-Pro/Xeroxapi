@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     const channel = await youtube.getChannel(id);
 
     const fetchVideos = async (videos) => {
-      let list = videos || [];
+      let list = videos ? Array.from(videos) : [];
       while (list.length < limit && videos?.has_continuation) {
         const next = await videos.getContinuation();
         list = list.concat(next.contents || []);
@@ -28,8 +28,8 @@ export default async function handler(req, res) {
     };
 
     const latestVideos = await fetchVideos(channel.videos);
-    const oldestVideos = await fetchVideos(channel.videos?.sort((a,b)=>a.publish_date-b.publish_date));
-    const popularVideos = await fetchVideos(channel.videos?.sort((a,b)=>b.view_count-a.view_count));
+    const oldestVideos = await fetchVideos(channel.videos ? [...channel.videos].sort((a,b)=>a.publish_date-b.publish_date) : []);
+    const popularVideos = await fetchVideos(channel.videos ? [...channel.videos].sort((a,b)=>b.view_count-a.view_count) : []);
     const shorts = await fetchVideos(channel.shorts);
     const playlists = await fetchVideos(channel.playlists);
 
@@ -41,8 +41,8 @@ export default async function handler(req, res) {
       latest_videos: latestVideos,
       oldest_videos: oldestVideos,
       popular_videos: popularVideos,
-      shorts: shorts,
-      playlists: playlists
+      shorts,
+      playlists
     });
 
   } catch (err) {
