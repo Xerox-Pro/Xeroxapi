@@ -12,17 +12,32 @@ export default async function handler(req, res) {
       });
     }
 
-    const trending = await youtube.getTrending();
+    const mtrending = await youtube.getTrending(music);
+    const vtrending = await youtube.getTrending();
+    const gtrending = await youtube.getTrending(game);
 
     res.json(
-      trending.videos.map(v => ({
+      vtrending.videos.map(v => ({
         id: v.id,
         title: v.title,
         channel: v.author?.name,
         views: v.view_count,
         uploaded: v.published,
       }))
-    );
+     mtrending.videos.map(v => ({
+        id: v.id,
+        title: v.title,
+        channel: v.author?.name,
+        views: v.view_count,
+        uploaded: v.published,
+      })
+gtrending.videos.map(v => ({
+        id: v.id,
+        title: v.title,
+        channel: v.author?.name,
+        views: v.view_count,
+        uploaded: v.published,
+);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
