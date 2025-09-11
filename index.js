@@ -11,6 +11,7 @@ app.get("/api/channel", channel);
 app.get("/api/comments", comments);
 app.get("/api/search", search);
 app.get("/api/video", video);
+app.get("/api/fvideo", fvideo);
 
 // "/" ページでAPI情報を返す、（消しても良い）
 app.get("/", (_,res) => {
