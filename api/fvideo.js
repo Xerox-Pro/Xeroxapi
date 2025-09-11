@@ -12,32 +12,33 @@ export default async function handler(req, res) {
       });
     }
 
-    const mtrending = await youtube.getTrending(music);
+    const mtrending = await youtube.getTrending("music");
     const vtrending = await youtube.getTrending();
-    const gtrending = await youtube.getTrending(game);
+    const gtrending = await youtube.getTrending("gaming");
 
-    res.json(
-      vtrending.videos.map(v => ({
+    res.json({
+      videos: vtrending.videos.map(v => ({
+        id: v.id,
+        title: v.title,
+        channel: v.author?.name,
+        views: v.view_count,
+        uploaded: v.published,
+      })),
+      music: mtrending.videos.map(v => ({
+        id: v.id,
+        title: v.title,
+        channel: v.author?.name,
+        views: v.view_count,
+        uploaded: v.published,
+      })),
+      gaming: gtrending.videos.map(v => ({
         id: v.id,
         title: v.title,
         channel: v.author?.name,
         views: v.view_count,
         uploaded: v.published,
       }))
-     mtrending.videos.map(v => ({
-        id: v.id,
-        title: v.title,
-        channel: v.author?.name,
-        views: v.view_count,
-        uploaded: v.published,
-      })
-gtrending.videos.map(v => ({
-        id: v.id,
-        title: v.title,
-        channel: v.author?.name,
-        views: v.view_count,
-        uploaded: v.published,
-));
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
