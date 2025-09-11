@@ -4,14 +4,18 @@ let youtube;
 
 export default async function handler(req, res) {
   try {
-    // YouTubeクライアント初期化
     if (!youtube) youtube = await Innertube.create({ generate_session_locally: true });
 
-    // パスパラメータから動画ID取得
-    const id = req.url.split('/').pop();
+    // URLから動画IDを安全に取得
+    let id = req.query.id;
+    if (!id) {
+      // パスパラメータ対応
+      const parts = req.url.split('/');
+      id = parts[parts.length - 1] || null;
+    }
     if (!id) return res.status(400).json({ error: "Missing video id" });
 
-    const limit = 50; // 取得件数上限（関連動画）
+    const limit = 50;
 
     // 動画情報取得
     const info = await youtube.getInfo(id);
@@ -19,7 +23,7 @@ export default async function handler(req, res) {
 
     const videoInfo = {
       title: details.title,
-      description: details.description, // 概要欄
+      description: details.description,
       view_count: details.view_count,
       published: details.publish_date
     };
