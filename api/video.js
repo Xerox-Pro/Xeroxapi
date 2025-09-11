@@ -9,33 +9,32 @@ export default async function handler(req, res) {
     const id = req.query.id;
     if (!id) return res.status(400).json({ error: "Missing video id" });
 
-    const limit = 100;
-
     const info = await youtube.getInfo(id);
+
     const details = info.basic_info;
+    const primary = info.primary_info;
+    const secondary = info.secondary_info;
 
+    // 関連動画
     let related = info.related_videos ? Array.from(info.related_videos) : [];
-
-    while (related.length < limit && info.has_continuation) {
+    if (info.has_continuation) {
       const next = await info.getContinuation();
       related = related.concat(next.related_videos || []);
     }
 
     res.json({
       id: details.id,
-      title: detailsx.primary_info.title.text,
-      description: details.short_description,
-      full_description: detailsx.secondary_info.description.text,
-      views: details.view_count,
-      likes: details.like_count,
+      title: primary?.title?.text || details.title,
+      description: details.short_description || "",
+      full_description: secondary?.description?.text || "",
+      views: primary?.view_count?.text || details.view_count,
+      likes: details.like_count || 0,
+      upload_date: primary?.published?.text || details.publish_date,
       channel: {
-        id: details.channel_id,
-        name: details.author,
+        id: secondary?.owner?.author?.id || details.channel_id,
+        name: secondary?.owner?.author?.name || details.author,
       },
-      upload_date: details.publish_date,
-      keywords: details.keywords || [],
-      duration: details.duration,
-      related_videos: related.slice(0, limit).map(v => ({
+      related_videos: related.slice(0, 20).map(v => ({
         id: v.id,
         title: v.title,
         duration: v.duration?.text,
