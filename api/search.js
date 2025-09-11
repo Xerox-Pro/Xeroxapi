@@ -25,7 +25,8 @@ export default async function handler(req, res) {
         title: v.title?.text || v.title,
         duration: v.duration?.text,
         channel: v.author?.name,
-        channelIcon: v.author?.thumbnails?.[0]?.url || null // ← チャンネルアイコン追加
+        channelId: v.author?.id || null,              // ← チャンネルID
+        channelIcon: v.author?.thumbnails?.[0]?.url || null // ← チャンネルアイコン
       }))
     });
   } catch (err) {
