@@ -15,15 +15,16 @@ export default async function handler(req, res) {
     const primary = info.primary_info;
     const secondary = info.secondary_info;
 
-    // 関連動画
-    let related = info.related_videos ? Array.from(info.related_videos) : [];
-    if (info.has_continuation) {
-      const next = await info.getContinuation();
-      related = related.concat(next.related_videos || []);
+    // 関連動画の取得 (related_videos または watch_next_feed)
+    let related = [];
+    if (info.related_videos && info.related_videos.length > 0) {
+      related = info.related_videos;
+    } else if (info.watch_next_feed) {
+      related = info.watch_next_feed.filter(v => v.id); // videoId があるものだけ
     }
 
     res.json({
-      videoId: details.id, // ← 動画IDを明示
+      videoId: details.id,  // ← 動画IDを追加
       title: primary?.title?.text || details.title,
       description: details.short_description || "",
       full_description: secondary?.description?.text || "",
@@ -35,11 +36,11 @@ export default async function handler(req, res) {
         name: secondary?.owner?.author?.name || details.author,
       },
       related_videos: related.slice(0, 20).map(v => ({
-        videoId: v.id,  // ← videoId を明示
+        videoId: v.id || v.content_id,  // ← videoId を必ず拾う
         title: v.title,
         duration: v.duration?.text,
-        channel: v.author?.name,
-        views: v.view_count
+        channel: v.author?.name || v.metadata?.metadata_rows?.[0]?.metadata_parts?.[0]?.text?.text,
+        views: v.view_count || v.metadata?.metadata_rows?.[1]?.metadata_parts?.[0]?.text?.text
       }))
     });
   } catch (err) {
