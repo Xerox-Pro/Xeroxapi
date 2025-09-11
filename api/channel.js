@@ -22,15 +22,15 @@ export default async function handler(req, res) {
       banner: channel.metadata?.banner?.[0]?.url
     };
 
-    // 動画情報 (最新 N 件)
-    const latestVideos = channel.contents?.contents
-      ?.filter(item => item.type === "GridVideo")
-      ?.slice(0, 20) // ← 最新20件
+    // 動画一覧を取得
+    const videosFeed = await channel.getVideos(); // ← これ重要
+    const latestVideos = videosFeed.videos
+      ?.slice(0, 20) // 最新20件
       ?.map(video => ({
         video_id: video.id,
         title: video.title?.text,
-        views: video.views?.text,
-        published: video.published?.text,
+        views: video.view_count,
+        published: video.published,
         thumbnail: video.thumbnails?.[0]?.url
       })) || [];
 
