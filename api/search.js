@@ -11,12 +11,12 @@ export default async function handler(req, res) {
 
     const limit = parseInt(req.query.limit) || 50;
 
-    const searchResult = await youtube.search(query, { type: "video" });
+    let searchResult = await youtube.search(query, { type: "video" });
     let results = searchResult.videos ? Array.from(searchResult.videos) : [];
 
     while (results.length < limit && searchResult.has_continuation) {
-      const next = await searchResult.getContinuation();
-      results = results.concat(next.videos || []);
+      searchResult = await searchResult.getContinuation();
+      results = results.concat(searchResult.videos || []);
     }
 
     res.json({
@@ -25,6 +25,7 @@ export default async function handler(req, res) {
         title: v.title?.text || v.title,
         duration: v.duration?.text,
         channel: v.author?.name,
+        channelIcon: v.author?.thumbnails?.[0]?.url || null // ← チャンネルアイコン追加
       }))
     });
   } catch (err) {
