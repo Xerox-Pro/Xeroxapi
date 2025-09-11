@@ -4,7 +4,7 @@ import comments from "./api/comments.js";
 import search from "./api/search.js";
 import video from "./api/video.js";
 import fvideo from "./api/fvideo.js";
-import search from "./api/search2.js";
+import search2 from "./api/search2.js";
 
 const app = express();
 
