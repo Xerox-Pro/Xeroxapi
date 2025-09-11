@@ -25,7 +25,7 @@ export default async function handler(req, res) {
     // 動画一覧を取得
     const videosFeed = await channel.getVideos(); // ← これ重要
     const latestVideos = videosFeed.videos
-      ?.slice(0, 200) // 最新20件
+      ?.slice(0, 500) // 最新20件
       ?.map(video => ({
         video_id: video.id,
         title: video.title?.text,
