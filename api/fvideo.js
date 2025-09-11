@@ -37,7 +37,7 @@ gtrending.videos.map(v => ({
         channel: v.author?.name,
         views: v.view_count,
         uploaded: v.published,
-);
+));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
