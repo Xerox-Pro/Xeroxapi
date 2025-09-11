@@ -3,6 +3,7 @@ import channel from "./api/channel.js";
 import comments from "./api/comments.js";
 import search from "./api/search.js";
 import video from "./api/video.js";
+import fvideo from "./api/fvideo.js";
 
 const app = express();
 
