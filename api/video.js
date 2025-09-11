@@ -4,45 +4,45 @@ let youtube;
 
 export default async function handler(req, res) {
   try {
-    if (!youtube) youtube = await Innertube.create({ generate_session_locally: true });
+    if (!youtube) youtube = await Innertube.create();
 
-    // URLから動画IDを安全に取得
-    let id = req.query.id;
-    if (!id) {
-      // パスパラメータ対応
-      const parts = req.url.split('/');
-      id = parts[parts.length - 1] || null;
-    }
+    const id = req.query.id;
     if (!id) return res.status(400).json({ error: "Missing video id" });
 
-    const limit = 50;
+    const limit = 100;
 
-    // 動画情報取得
     const info = await youtube.getInfo(id);
     const details = info.basic_info;
 
-    const videoInfo = {
-      title: details.title,
-      description: details.description,
-      view_count: details.view_count,
-      published: details.publish_date
-    };
-
-    // 関連動画取得
     let related = info.related_videos ? Array.from(info.related_videos) : [];
-    let currentInfo = info;
 
-    while (related.length < limit && currentInfo.has_continuation) {
-      const next = await currentInfo.getContinuation();
+    while (related.length < limit && info.has_continuation) {
+      const next = await info.getContinuation();
       related = related.concat(next.related_videos || []);
-      currentInfo = next;
     }
 
     res.json({
-      video_info: videoInfo,
-      related_videos: related.slice(0, limit)
+      id: details.id,
+      title: details.title,
+      description: details.short_description,
+      full_description: details.description,
+      views: details.view_count,
+      likes: details.like_count,
+      channel: {
+        id: details.channel_id,
+        name: details.author,
+      },
+      upload_date: details.publish_date,
+      keywords: details.keywords || [],
+      duration: details.duration,
+      related_videos: related.slice(0, limit).map(v => ({
+        id: v.id,
+        title: v.title,
+        duration: v.duration?.text,
+        channel: v.author?.name,
+        views: v.view_count
+      }))
     });
-
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
