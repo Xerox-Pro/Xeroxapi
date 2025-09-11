@@ -23,7 +23,7 @@ export default async function handler(req, res) {
     }
 
     res.json({
-      id: details.id,
+      videoId: details.id, // ← 動画IDを明示
       title: primary?.title?.text || details.title,
       description: details.short_description || "",
       full_description: secondary?.description?.text || "",
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
         name: secondary?.owner?.author?.name || details.author,
       },
       related_videos: related.slice(0, 20).map(v => ({
-        id: v.id,
+        videoId: v.id,  // ← videoId を明示
         title: v.title,
         duration: v.duration?.text,
         channel: v.author?.name,
