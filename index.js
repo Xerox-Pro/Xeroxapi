@@ -5,6 +5,7 @@ import search from "./api/search.js";
 import video from "./api/video.js";
 import fvideo from "./api/fvideo.js";
 import search2 from "./api/search2.js";
+import shorts from "./api/shorts.js";
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.get("/api/search", search);
 app.get("/api/video", video);
 app.get("/api/fvideo", fvideo);
 app.get("/api/search2", search2);
+app.get("/api/shorts", shorts);
 
 // "/" ページでAPI情報を返す、（消しても良い）
 app.get("/", (_,res) => {
